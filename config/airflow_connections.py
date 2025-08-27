@@ -13,13 +13,13 @@ def create_trino_connection():
     trino_conn = Connection(
         conn_id='trino_default',
         conn_type='trino',
-        host='localhost',  # Update with your Trino coordinator host
+        host='trino-coordinator',  # Updated to use Docker service name
         port=8080,         # Update with your Trino coordinator port
         login='admin',     # Update with your Trino username
         password='',       # Update with password if required
-        schema='iceberg',  # Default schema
+        schema='memory',  # Default schema
         extra={
-            'catalog': 'iceberg',
+            'catalog': 'memory',
             'http_scheme': 'http',  # Use 'https' if SSL is enabled
             'verify': False,        # Set to True for SSL verification
         }

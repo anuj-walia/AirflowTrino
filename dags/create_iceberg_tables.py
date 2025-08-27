@@ -39,8 +39,7 @@ start_task = EmptyOperator(
 create_catalog_schema = TrinoOperator(
     task_id='create_catalog_schema',
     sql="""
-    CREATE SCHEMA IF NOT EXISTS iceberg.analytics
-    WITH (location = 's3://warehouse/iceberg/analytics/')
+    CREATE SCHEMA IF NOT EXISTS memory.analytics
     """,
     trino_conn_id='trino_default',
     dag=dag,
@@ -50,7 +49,7 @@ create_catalog_schema = TrinoOperator(
 create_customers_table = TrinoOperator(
     task_id='create_customers_table',
     sql="""
-    CREATE TABLE IF NOT EXISTS iceberg.analytics.customers (
+    CREATE TABLE IF NOT EXISTS memory.analytics.customers (
         customer_id BIGINT,
         first_name VARCHAR(50),
         last_name VARCHAR(50),
@@ -66,10 +65,6 @@ create_customers_table = TrinoOperator(
         is_active BOOLEAN,
         customer_segment VARCHAR(20)
     )
-    WITH (
-        format = 'PARQUET',
-        partitioning = ARRAY['country', 'registration_date']
-    )
     """,
     trino_conn_id='trino_default',
     dag=dag,
@@ -79,7 +74,7 @@ create_customers_table = TrinoOperator(
 create_orders_table = TrinoOperator(
     task_id='create_orders_table',
     sql="""
-    CREATE TABLE IF NOT EXISTS iceberg.analytics.orders (
+    CREATE TABLE IF NOT EXISTS memory.analytics.orders (
         order_id BIGINT,
         customer_id BIGINT,
         order_date DATE,
@@ -97,10 +92,6 @@ create_orders_table = TrinoOperator(
         created_at TIMESTAMP,
         updated_at TIMESTAMP
     )
-    WITH (
-        format = 'PARQUET',
-        partitioning = ARRAY['order_date', 'shipping_country']
-    )
     """,
     trino_conn_id='trino_default',
     dag=dag,
@@ -110,7 +101,7 @@ create_orders_table = TrinoOperator(
 create_products_table = TrinoOperator(
     task_id='create_products_table',
     sql="""
-    CREATE TABLE IF NOT EXISTS iceberg.analytics.products (
+    CREATE TABLE IF NOT EXISTS memory.analytics.products (
         product_id BIGINT,
         product_name VARCHAR(100),
         category VARCHAR(50),
@@ -129,10 +120,6 @@ create_products_table = TrinoOperator(
         created_date DATE,
         last_updated TIMESTAMP
     )
-    WITH (
-        format = 'PARQUET',
-        partitioning = ARRAY['category', 'created_date']
-    )
     """,
     trino_conn_id='trino_default',
     dag=dag,
@@ -142,7 +129,7 @@ create_products_table = TrinoOperator(
 create_order_items_table = TrinoOperator(
     task_id='create_order_items_table',
     sql="""
-    CREATE TABLE IF NOT EXISTS iceberg.analytics.order_items (
+    CREATE TABLE IF NOT EXISTS memory.analytics.order_items (
         order_item_id BIGINT,
         order_id BIGINT,
         product_id BIGINT,
@@ -151,10 +138,6 @@ create_order_items_table = TrinoOperator(
         total_price DECIMAL(10,2),
         discount_percentage DECIMAL(5,2),
         created_at TIMESTAMP
-    )
-    WITH (
-        format = 'PARQUET',
-        partitioning = ARRAY['created_at']
     )
     """,
     trino_conn_id='trino_default',
@@ -165,7 +148,7 @@ create_order_items_table = TrinoOperator(
 insert_sample_customers = TrinoOperator(
     task_id='insert_sample_customers',
     sql="""
-    INSERT INTO iceberg.analytics.customers VALUES
+    INSERT INTO memory.analytics.customers VALUES
     (1, 'John', 'Doe', 'john.doe@email.com', '+1-555-0101', '123 Main St', 'New York', 'NY', '10001', 'USA', DATE '2023-01-15', TIMESTAMP '2024-01-15 10:30:00', true, 'Premium'),
     (2, 'Jane', 'Smith', 'jane.smith@email.com', '+1-555-0102', '456 Oak Ave', 'Los Angeles', 'CA', '90210', 'USA', DATE '2023-02-20', TIMESTAMP '2024-01-14 15:45:00', true, 'Standard'),
     (3, 'Bob', 'Johnson', 'bob.johnson@email.com', '+1-555-0103', '789 Pine Rd', 'Chicago', 'IL', '60601', 'USA', DATE '2023-03-10', TIMESTAMP '2024-01-13 09:15:00', false, 'Basic'),
@@ -180,7 +163,7 @@ insert_sample_customers = TrinoOperator(
 insert_sample_products = TrinoOperator(
     task_id='insert_sample_products',
     sql="""
-    INSERT INTO iceberg.analytics.products VALUES
+    INSERT INTO memory.analytics.products VALUES
     (1, 'Wireless Headphones', 'Electronics', 'Audio', 'TechBrand', 99.99, 45.00, 0.25, '20x15x8 cm', 'Black', 'One Size', 'Plastic', 'High-quality wireless headphones with noise cancellation', true, 150, DATE '2023-01-01', TIMESTAMP '2024-01-15 12:00:00'),
     (2, 'Running Shoes', 'Footwear', 'Athletic', 'SportsBrand', 129.99, 60.00, 0.80, '30x20x12 cm', 'Blue', '10', 'Synthetic', 'Comfortable running shoes for daily training', true, 75, DATE '2023-01-15', TIMESTAMP '2024-01-14 10:30:00'),
     (3, 'Coffee Maker', 'Appliances', 'Kitchen', 'HomeBrand', 199.99, 90.00, 3.50, '35x25x40 cm', 'Silver', 'Large', 'Stainless Steel', 'Programmable coffee maker with timer', true, 30, DATE '2023-02-01', TIMESTAMP '2024-01-13 14:15:00'),

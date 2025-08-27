@@ -6,7 +6,7 @@ This DAG demonstrates various data reading and analysis operations across Iceber
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.providers.trino.operators.trino import TrinoOperator
-from airflow.operators.dummy import DummyOperator
+from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 import logging
 
@@ -37,7 +37,7 @@ def log_analysis_start():
     return "Analysis started successfully"
 
 # Start task
-start_task = DummyOperator(
+start_task = EmptyOperator(
     task_id='start',
     dag=dag,
 )
@@ -62,7 +62,7 @@ analyze_customers = TrinoOperator(
         MIN(registration_date) as earliest_registration,
         MAX(registration_date) as latest_registration,
         CURRENT_TIMESTAMP as analysis_timestamp
-    FROM iceberg.analytics.customers
+    FROM memory.analytics.customers
     """,
     trino_conn_id='trino_default',
     dag=dag,
@@ -83,7 +83,7 @@ analyze_products = TrinoOperator(
         MIN(price) as min_price,
         MAX(price) as max_price,
         CURRENT_TIMESTAMP as analysis_timestamp
-    FROM iceberg.analytics.products
+    FROM memory.analytics.products
     """,
     trino_conn_id='trino_default',
     dag=dag,
@@ -99,7 +99,7 @@ customer_segmentation = TrinoOperator(
         COUNT(*) as customer_count,
         COUNT(CASE WHEN is_active = true THEN 1 END) as active_count,
         ROUND(COUNT(CASE WHEN is_active = true THEN 1 END) * 100.0 / COUNT(*), 2) as active_percentage
-    FROM iceberg.analytics.customers
+    FROM memory.analytics.customers
     GROUP BY customer_segment, country
     ORDER BY customer_segment, country
     """,
@@ -119,7 +119,7 @@ product_category_analysis = TrinoOperator(
         AVG(price) as avg_price,
         SUM(stock_quantity * price) as inventory_value,
         COUNT(CASE WHEN is_available = true THEN 1 END) as available_products
-    FROM iceberg.analytics.products
+    FROM memory.analytics.products
     GROUP BY category, subcategory
     ORDER BY inventory_value DESC
     """,
@@ -136,7 +136,7 @@ customer_product_insights = TrinoOperator(
             country,
             customer_segment,
             COUNT(*) as customers_in_segment
-        FROM iceberg.analytics.customers
+        FROM memory.analytics.customers
         WHERE is_active = true
         GROUP BY country, customer_segment
     ),
@@ -145,7 +145,7 @@ customer_product_insights = TrinoOperator(
             category,
             COUNT(*) as products_in_category,
             AVG(price) as avg_category_price
-        FROM iceberg.analytics.products
+        FROM memory.analytics.products
         WHERE is_available = true
         GROUP BY category
     )
@@ -176,7 +176,7 @@ time_based_analysis = TrinoOperator(
             DATE_TRUNC('month', registration_date) as month,
             COUNT(*) as new_customers,
             COUNT(CASE WHEN customer_segment = 'Premium' THEN 1 END) as premium_customers
-        FROM iceberg.analytics.customers
+        FROM memory.analytics.customers
         GROUP BY DATE_TRUNC('month', registration_date)
     ),
     product_creation_trends AS (
@@ -184,7 +184,7 @@ time_based_analysis = TrinoOperator(
             DATE_TRUNC('month', created_date) as month,
             COUNT(*) as new_products,
             AVG(price) as avg_price_new_products
-        FROM iceberg.analytics.products
+        FROM memory.analytics.products
         GROUP BY DATE_TRUNC('month', created_date)
     )
     SELECT 
@@ -213,7 +213,7 @@ data_quality_checks = TrinoOperator(
             COUNT(CASE WHEN email IS NULL OR email = '' THEN 1 END) as missing_emails,
             COUNT(CASE WHEN email NOT LIKE '%@%' THEN 1 END) as invalid_emails,
             COUNT(DISTINCT customer_id) as unique_ids
-        FROM iceberg.analytics.customers
+        FROM memory.analytics.customers
     ),
     product_quality AS (
         SELECT 
@@ -223,7 +223,7 @@ data_quality_checks = TrinoOperator(
             COUNT(CASE WHEN price <= 0 THEN 1 END) as invalid_prices,
             COUNT(CASE WHEN stock_quantity < 0 THEN 1 END) as negative_stock,
             COUNT(DISTINCT product_id) as unique_ids
-        FROM iceberg.analytics.products
+        FROM memory.analytics.products
     )
     SELECT * FROM customer_quality
     UNION ALL
@@ -247,10 +247,10 @@ generate_summary_report = TrinoOperator(
     WITH summary_stats AS (
         SELECT 
             'Summary Report' as report_type,
-            (SELECT COUNT(*) FROM iceberg.analytics.customers) as total_customers,
-            (SELECT COUNT(*) FROM iceberg.analytics.products) as total_products,
-            (SELECT COUNT(DISTINCT country) FROM iceberg.analytics.customers) as countries_served,
-            (SELECT COUNT(DISTINCT category) FROM iceberg.analytics.products) as product_categories,
+            (SELECT COUNT(*) FROM memory.analytics.customers) as total_customers,
+            (SELECT COUNT(*) FROM memory.analytics.products) as total_products,
+            (SELECT COUNT(DISTINCT country) FROM memory.analytics.customers) as countries_served,
+            (SELECT COUNT(DISTINCT category) FROM memory.analytics.products) as product_categories,
             CURRENT_TIMESTAMP as report_generated_at
     )
     SELECT 
@@ -268,7 +268,7 @@ generate_summary_report = TrinoOperator(
 )
 
 # End task
-end_task = DummyOperator(
+end_task = EmptyOperator(
     task_id='end',
     dag=dag,
 )
