@@ -1,0 +1,9 @@
+# Airflow and Trino dependencies
+apache-airflow==2.8.1
+apache-airflow-providers-trino==5.4.1
+trino==0.328.0
+
+# Additional useful packages
+pandas==2.1.4
+sqlalchemy==1.4.53
+psycopg2-binary==2.9.9  # For PostgreSQL metadata database
