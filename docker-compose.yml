@@ -148,6 +148,7 @@ services:
   # MinIO for S3-compatible storage (for Iceberg tables)
   minio:
     image: minio/minio:latest
+    #image: bitnami/minio:latest
     hostname: minio
     ports:
       - "9000:9000"
